@@ -1,0 +1,33 @@
+{
+  "manifestVersion": 1,
+  "id": "library-env-tools",
+  "name": "Library .env Tools",
+  "version": "1.0.0",
+  "publisher": "seu-publisher",
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "icon.png"
+  },
+  "description": "Importe e exporte bibliotecas como arquivos .env",
+  "files": [
+    {
+      "path": "src",
+      "addressable": true
+    }
+  ],
+  "contributions": [
+    {
+      "id": "library-env-panel",
+      "type": "ms.vss-web.hub",
+      "targets": ["ms.vss-web.project-hub-group"],
+      "properties": {
+        "name": "Library .env Tools",
+        "uri": "src/index.html"
+      }
+    }
+  ]
+}
