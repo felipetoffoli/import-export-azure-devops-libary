@@ -2,32 +2,41 @@
   "manifestVersion": 1,
   "id": "library-env-tools",
   "name": "Library .env Tools",
-  "version": "1.0.0",
-  "publisher": "seu-publisher",
+  "version": "1.0.3",
+  "publisher": "felipetoffoli",
+  "description": "Importe e exporte bibliotecas como arquivos .env",
+  "overview": "README.md",
+  "icons": {
+    "default": "icon.png"
+  },
+  "categories": ["Azure Pipelines"],
   "targets": [
     {
       "id": "Microsoft.VisualStudio.Services"
     }
   ],
-  "icons": {
-    "default": "icon.png"
-  },
-  "description": "Importe e exporte bibliotecas como arquivos .env",
   "files": [
     {
       "path": "src",
       "addressable": true
+    },
+    {
+      "path": "README.md"
     }
   ],
-  "contributions": [
-    {
-      "id": "library-env-panel",
-      "type": "ms.vss-web.hub",
-      "targets": ["ms.vss-web.project-hub-group"],
-      "properties": {
-        "name": "Library .env Tools",
-        "uri": "src/index.html"
-      }
+"contributions": [
+  {
+    "id": "library-env-panel",
+    "type": "ms.vss-web.hub",
+    "targets": [
+      "ms.vss-web.project-hub-group"
+    ],
+    "properties": {
+      "name": "Library .env Tools",
+      "groupId": "ms.vss-web.project-pipelines-hub-group",
+      "uri": "src/index.html"
     }
-  ]
+  }
+]
+
 }
