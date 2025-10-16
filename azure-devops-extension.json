@@ -1,0 +1,16 @@
+{
+  "manifestVersion": 1,
+  "publisher": "felipetoffoli",
+  "version": "1.0.15",
+  "id": "azdo-library-env-react",
+  "name": "Library .env Tools",
+  "description": "Importa e exporta bibliotecas como arquivos .env",
+  "categories": ["Azure Pipelines"],
+  "targets": [{ "id": "Microsoft.VisualStudio.Services" }],
+  "icons": { "default": "icon.png" },
+  "content": { "details": { "path": "overview.md" } },
+  "files": [
+    { "path": "static", "addressable": true },
+    { "path": "dist", "addressable": true }
+  ]
+}
