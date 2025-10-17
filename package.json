@@ -26,7 +26,7 @@
     "start:dev": "webpack-dev-server --mode development"
   },
   "dependencies": {
-    "azure-devops-extension-api": "^4.234.0",
+    "azure-devops-extension-api": "^4.261.0",
     "azure-devops-extension-sdk": "^3.1.2",
     "azure-devops-ui": "^2.167.63",
     "react": "~16.13.1",

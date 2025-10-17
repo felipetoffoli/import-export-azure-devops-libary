@@ -27,6 +27,9 @@ module.exports = (env, argv) => ({
     stats: {
         warnings: false
     },
+        infrastructureLogging: {
+  level: 'error'
+},
     module: {
         rules: [
             {
@@ -58,6 +61,8 @@ module.exports = (env, argv) => ({
            ]
         })
     ],
+
+
     ...(env.WEBPACK_SERVE
         ? {
               devtool: 'inline-source-map',

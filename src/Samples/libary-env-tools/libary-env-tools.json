@@ -8,9 +8,9 @@
       ],
       "properties": {
         "name": "Library .env Tools",
-        "uri": "dist/project-admin-hub-group/project-admin-hub-group.html",
+        "uri": "dist/libary-env-tools/libary-env-tools.html",
         "icon": "bowtie-icon bowtie-variable-group",
-        "order": 92
+        "order": 89
       }
     }
   ]
