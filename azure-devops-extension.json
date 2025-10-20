@@ -1,16 +1,42 @@
 {
   "manifestVersion": 1,
-  "publisher": "felipetoffoli",
-  "version": "1.0.73",
   "id": "azdo-library-env-react",
   "name": "Library .env Tools",
-  "description": "Importa e exporta bibliotecas como arquivos .env",
+  "publisher": "felipetoffoli",
+  "version": "1.0.79",
+  "description": "Importa e exporta bibliotecas do Azure DevOps como arquivos .env",
   "categories": ["Azure Pipelines"],
-  "targets": [{ "id": "Microsoft.VisualStudio.Services" }],
-  "icons": { "default": "icon.png" },
-  "content": { "details": { "path": "overview.md" } },
-  "files": [
-    { "path": "static", "addressable": true },
-    { "path": "dist", "addressable": true }
+  "targets": [
+    { "id": "Microsoft.VisualStudio.Services" }
+  ],
+  "icons": {
+    "default": "icon.png"
+  },
+  "content": {
+    "details": {
+      "path": "README.md"
+    }
+  },
+  "links": {
+    "home": {
+      "uri": "https://marketplace.visualstudio.com/publishers/felipetoffoli"
+    },
+    "repository": {
+      "uri": "https://github.com/felipetoffoli/import-export-azure-devops-libary"
+    },
+    "issues": {
+      "uri": "https://github.com/felipetoffoli/import-export-azure-devops-libary/issues"
+    }
+  },
+
+  "contributions": [
+    {
+      "id": "azdo-library-env-react-task",
+      "type": "ms.vss-distributed-task.task",
+      "targets": ["ms.vss-distributed-task.tasks"],
+      "properties": {
+        "name": "tasks/import-export"
+      }
+    }
   ]
 }

@@ -125,7 +125,7 @@ export class AzureDevOpsService {
     orgUrl: string,
     pat: string
   ): Promise<VariableGroup[]> {
-    const url = `${orgUrl}/${projectName}/_apis/distributedtask/variablegroups?api-version=7.0&$top=150`;
+    const url = `${orgUrl}/${projectName}/_apis/distributedtask/variablegroups?api-version=7.0&$top=200`;
     const res = await fetch(url, {
       headers: { Authorization: `Basic ${btoa(":" + pat)}` },
     });

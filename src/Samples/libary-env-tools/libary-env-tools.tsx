@@ -39,6 +39,7 @@ interface IState {
   libraryNameInput: string;
   replaceExisting: boolean;
   orgUrl: string;
+  forceReplace: boolean;
 }
 
 class LibraryEnvTools extends React.Component<{}, IState> {
@@ -60,6 +61,7 @@ class LibraryEnvTools extends React.Component<{}, IState> {
       libraryNameInput: "",
       replaceExisting: false,
       orgUrl: "",
+      forceReplace: false,
     };
   }
 
@@ -155,18 +157,21 @@ class LibraryEnvTools extends React.Component<{}, IState> {
   private handleFileSelection(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    const nameWithoutExt = file.name.replace(/\.(env|json)$/i, "");
+    if (!this.state.forceReplace) {
+      const nameWithoutExt = file.name.replace(/\.(env|json)$/i, "");
+      this.setState({
+        libraryNameInput: nameWithoutExt,
+      });
+    }
     this.setState({
       fileToImport: file,
-      libraryNameInput: nameWithoutExt,
     });
   }
   private async handleImportSubmit() {
     const { fileToImport, libraryNameInput, replaceExisting, project, orgUrl } =
       this.state;
-      console.log('libraryNameInput', libraryNameInput);
-      
+    console.log("libraryNameInput", libraryNameInput);
+
     if (!fileToImport || !project) return;
 
     try {
@@ -241,7 +246,7 @@ class LibraryEnvTools extends React.Component<{}, IState> {
               />
             </div>
 
-            <div>
+            <div style={{ paddingTop: "10px" }}>
               <Button
                 primary={true}
                 iconProps={{ iconName: "Upload" }}
@@ -328,7 +333,12 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                                     id: "import",
                                     text: "Import .env (REPLACE)",
                                     onActivate: () =>
-                                      alert(`Importar → ${lib.name}`),
+                                      this.setState({
+                                        showImportModal: true,
+                                        replaceExisting: true,
+                                        forceReplace: true,
+                                        libraryNameInput: lib.name,
+                                      }),
                                   },
                                 ],
                               },
@@ -371,16 +381,32 @@ class LibraryEnvTools extends React.Component<{}, IState> {
         {this.state.showImportModal && (
           <Dialog
             titleProps={{ text: "📥 Importar Library .env / .json" }}
-            onDismiss={() => this.setState({ showImportModal: false })}
+            onDismiss={() =>
+              this.setState({
+                showImportModal: false,
+                forceReplace: false,
+                replaceExisting: false,
+                libraryNameInput: "",
+                fileToImport: null,
+              })
+            }
             footerButtonProps={[
               {
                 text: "Cancelar",
-                onClick: () => this.setState({ showImportModal: false }),
+                onClick: () =>
+                  this.setState({
+                    showImportModal: false,
+                    forceReplace: false,
+                    replaceExisting: false,
+                    libraryNameInput: "",
+                    fileToImport: null,
+                  }),
               },
               {
                 primary: true,
                 text: "Importar",
                 onClick: () => this.handleImportSubmit(),
+
                 disabled:
                   !this.state.fileToImport ||
                   !this.state.libraryNameInput.trim(),
@@ -398,10 +424,15 @@ class LibraryEnvTools extends React.Component<{}, IState> {
 
               <TextField
                 value={this.state.libraryNameInput}
-                onChange={(_, v) => this.setState({ libraryNameInput: v })}
+                onChange={(_, v) => {
+                  if (this.state.forceReplace == false) {
+                    this.setState({ libraryNameInput: v });
+                  }
+                }}
                 placeholder="Nome da Library"
                 label="Nome da Library"
                 required={true}
+                disabled={this.state.forceReplace}
               />
 
               <Checkbox
@@ -410,6 +441,7 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                   this.setState({ replaceExisting: checked })
                 }
                 label="Substituir Library existente (REPLACE)"
+                disabled={this.state.forceReplace} // 👈 trava quando clicado via menu
               />
             </div>
           </Dialog>
