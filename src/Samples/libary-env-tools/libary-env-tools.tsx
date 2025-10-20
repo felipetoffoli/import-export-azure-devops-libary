@@ -8,15 +8,20 @@ import { TextField } from "azure-devops-ui/TextField";
 import { showRootComponent } from "../../Common";
 import { ExportDialog } from "./components/ExportDialog";
 import { exportLibrary } from "./utils/exportLibrary";
+import * as SDK from "azure-devops-extension-sdk";
 
 import {
   AzureDevOpsService,
+  getProjectContext,
   VariableGroup,
-  
 } from "./services/AzureDevOpsService";
 import { PatTokenDialog } from "./components/PatTokenDialog";
 
 import "./libary-env-tools.scss";
+import { Dialog } from "azure-devops-ui/Dialog";
+import { Checkbox } from "azure-devops-ui/Checkbox";
+import { Button } from "azure-devops-ui/Button";
+import { importLibrary } from "./utils/importLibary";
 
 interface IState {
   project?: any;
@@ -29,6 +34,11 @@ interface IState {
   search: string;
   showExportModal: boolean;
   selectedGroup?: VariableGroup;
+  showImportModal: boolean;
+  fileToImport?: File | null;
+  libraryNameInput: string;
+  replaceExisting: boolean;
+  orgUrl: string;
 }
 
 class LibraryEnvTools extends React.Component<{}, IState> {
@@ -45,26 +55,37 @@ class LibraryEnvTools extends React.Component<{}, IState> {
       savingPat: false,
       search: "",
       showExportModal: false,
+      showImportModal: false,
+      fileToImport: null,
+      libraryNameInput: "",
+      replaceExisting: false,
+      orgUrl: "",
     };
   }
 
   async componentDidMount(): Promise<void> {
     await this.adoService.init();
-    const project = await this.adoService.getProject();
+    const { project, orgUrl } = await getProjectContext();
     this.setState({ project });
+    this.setState({ orgUrl });
 
     const pat = await this.adoService.getUserPat(project.name);
     if (!pat) {
       this.setState({ showPatModal: true });
       return;
     }
-    await this.loadVariableGroups(project.name, pat);
+    await this.loadVariableGroups(pat);
   }
 
-  private async loadVariableGroups(projectName: string, pat: string) {
+  private async loadVariableGroups(pat: string) {
     try {
       this.setState({ loading: true });
-      const groups = await this.adoService.getVariableGroups(projectName, pat);
+      const { project, orgUrl } = this.state;
+      const groups = await this.adoService.getVariableGroups(
+        project.name,
+        orgUrl,
+        pat
+      );
       this.setState({
         variableGroups: groups,
         filteredGroups: groups,
@@ -81,7 +102,7 @@ class LibraryEnvTools extends React.Component<{}, IState> {
     if (!project || !patInput.trim()) return;
     await this.adoService.saveUserPat(project.name, patInput.trim());
     this.setState({ showPatModal: false });
-    await this.loadVariableGroups(project.name, patInput.trim());
+    await this.loadVariableGroups(patInput.trim());
   }
 
   private async removePat() {
@@ -100,28 +121,84 @@ class LibraryEnvTools extends React.Component<{}, IState> {
   };
 
   public openLibraryItem = (id: number): void => {
-    const { project } = this.state;
+    const { project, orgUrl } = this.state;
     if (!project) return;
-
-    const orgUrl = "https://dev.azure.com/dr34mt34m";
     // ✅ URL correta para abrir o VariableGroup específico
     const targetUrl = `${orgUrl}/${project.name}/_library?itemType=VariableGroups&variableGroupId=${id}&view=VariableGroupView`;
 
     window.open(targetUrl, "_blank");
   };
 
-private async handleExport(group: any, format: "env" | "json", includeSecrets: boolean) {
-  const { project } = this.state;
-  if (!project) return;
+  private async handleExport(
+    group: any,
+    format: "env" | "json",
+    includeSecrets: boolean
+  ) {
+    const { project, orgUrl } = this.state;
+    if (!project) return;
 
-  const pat = await this.adoService.getUserPat(project.name);
-  if (!pat) {
-    this.setState({ showPatModal: true });
-    return;
+    const pat = await this.adoService.getUserPat(project.name);
+    if (!pat) {
+      this.setState({ showPatModal: true });
+      return;
+    }
+
+    await exportLibrary(
+      group,
+      format,
+      includeSecrets,
+      project.name,
+      orgUrl,
+      pat
+    );
   }
+  private handleFileSelection(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  await exportLibrary(group, format, includeSecrets, project.name, pat);
-}
+    const nameWithoutExt = file.name.replace(/\.(env|json)$/i, "");
+    this.setState({
+      fileToImport: file,
+      libraryNameInput: nameWithoutExt,
+    });
+  }
+  private async handleImportSubmit() {
+    const { fileToImport, libraryNameInput, replaceExisting, project, orgUrl } =
+      this.state;
+      console.log('libraryNameInput', libraryNameInput);
+      
+    if (!fileToImport || !project) return;
+
+    try {
+      const pat = await this.adoService.getUserPat(project.name);
+      if (!pat) {
+        this.setState({ showPatModal: true });
+        return;
+      }
+
+      const result = await importLibrary(
+        orgUrl,
+        project,
+        pat,
+        fileToImport,
+        replaceExisting,
+        false, // ignoreSecrets = false por padrão
+        libraryNameInput // 🆕 novo argumento: nome definido no modal
+      );
+
+      if (result.replaced) {
+        alert(`✅ Library "${libraryNameInput}" substituída com sucesso!`);
+      } else if (result.created) {
+        alert(`✅ Library "${libraryNameInput}" criada com sucesso!`);
+      }
+
+      this.setState({ showImportModal: false });
+      await this.loadVariableGroups(pat);
+    } catch (err: any) {
+      alert(`❌ Erro ao importar: ${err.message}`);
+      console.error("Erro no importLibrary:", err);
+    }
+  }
 
   render() {
     const {
@@ -148,14 +225,32 @@ private async handleExport(group: any, format: "env" | "json", includeSecrets: b
         />
 
         <div className="page-content">
-          <div style={{ marginBottom: "10px", maxWidth: "400px" }}>
-            <TextField
-              value={search}
-              onChange={(_, v) => this.handleSearch(v || "")}
-              placeholder="Pesquisar Library..."
-              maxWidth={400}
-            />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "10px",
+            }}
+          >
+            <div style={{ flex: 1, maxWidth: "400px" }}>
+              <TextField
+                value={search}
+                onChange={(_, v) => this.handleSearch(v || "")}
+                placeholder="Pesquisar Library..."
+              />
+            </div>
+
+            <div>
+              <Button
+                primary={true}
+                iconProps={{ iconName: "Upload" }}
+                text="Importar .env / .json"
+                onClick={() => this.setState({ showImportModal: true })}
+              />
+            </div>
           </div>
+
           <Card titleProps={{ text: "Libraries encontradas" }}>
             {loading ? (
               <Spinner label="Carregando Variable Groups..." />
@@ -214,9 +309,11 @@ private async handleExport(group: any, format: "env" | "json", includeSecrets: b
                                   {
                                     id: "edit",
                                     text: "Editar (abrir Library)",
-                                    onActivate: () =>
-                                      this.openLibraryItem(lib.id),
+                                    onActivate: () => {
+                                      this.openLibraryItem(lib.id);
+                                    },
                                   },
+
                                   {
                                     id: "export",
                                     text: "Exportar .env / .json",
@@ -271,6 +368,52 @@ private async handleExport(group: any, format: "env" | "json", includeSecrets: b
             }
           }}
         />
+        {this.state.showImportModal && (
+          <Dialog
+            titleProps={{ text: "📥 Importar Library .env / .json" }}
+            onDismiss={() => this.setState({ showImportModal: false })}
+            footerButtonProps={[
+              {
+                text: "Cancelar",
+                onClick: () => this.setState({ showImportModal: false }),
+              },
+              {
+                primary: true,
+                text: "Importar",
+                onClick: () => this.handleImportSubmit(),
+                disabled:
+                  !this.state.fileToImport ||
+                  !this.state.libraryNameInput.trim(),
+              },
+            ]}
+          >
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            >
+              <input
+                type="file"
+                accept=".env,.json"
+                onChange={(e) => this.handleFileSelection(e)}
+              />
+
+              <TextField
+                value={this.state.libraryNameInput}
+                onChange={(_, v) => this.setState({ libraryNameInput: v })}
+                placeholder="Nome da Library"
+                label="Nome da Library"
+                required={true}
+              />
+
+              <Checkbox
+                checked={this.state.replaceExisting}
+                onChange={(_, checked) =>
+                  this.setState({ replaceExisting: checked })
+                }
+                label="Substituir Library existente (REPLACE)"
+              />
+            </div>
+          </Dialog>
+        )}
       </Page>
     );
   }

@@ -1,12 +1,11 @@
-
 export async function exportLibrary(
   group: any,
   format: "env" | "json",
   includeSecrets: boolean,
   projectName: string,
+  orgUrl: string,
   pat: string
 ) {
-  const orgUrl = "https://dev.azure.com/dr34mt34m";
   const url = `${orgUrl}/${projectName}/_apis/distributedtask/variablegroups/${group.id}?api-version=7.0`;
 
   const res = await fetch(url, {
@@ -21,9 +20,10 @@ export async function exportLibrary(
   const data = await res.json();
   const variables = data.variables || {};
 
-  let output : any;
+  let output: string;
 
   if (format === "env") {
+    // 🔹 Formato .env
     output = Object.entries(variables)
       .map(([key, val]: any) => {
         if (val.isSecret && !includeSecrets) return `# ${key}=`;
@@ -32,15 +32,20 @@ export async function exportLibrary(
       })
       .join("\n");
   } else {
-    let json= Object.entries(variables).map(([key, val]: any) => ({
-      name: key,
-      value: val.isSecret && !includeSecrets ? "" : val.value ?? "",
-      type: val.isSecret ? "secret" : "normal",
-    }));
-    output = JSON.stringify(json);
-    }
+    // 🔹 Formato JSON no padrão esperado pelo importLibrary()
+    const json = {
+      name: group.name,
+      variables: Object.entries(variables).map(([key, val]: any) => ({
+        name: key,
+        value: val.isSecret && !includeSecrets ? "" : val.value ?? "",
+        type: val.isSecret ? "secret" : "normal",
+      })),
+    };
 
-  // cria download
+    output = JSON.stringify(json, null, 2); // formata com indentação
+  }
+
+  // 💾 Cria o download
   const blob = new Blob([output], {
     type: format === "json" ? "application/json" : "text/plain",
   });

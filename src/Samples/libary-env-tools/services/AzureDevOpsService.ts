@@ -4,6 +4,7 @@ import {
   IProjectPageService,
   IExtensionDataService,
   IExtensionDataManager,
+  IProjectInfo,
 } from "azure-devops-extension-api";
 
 export interface VariableGroup {
@@ -16,6 +17,49 @@ export interface VariableGroup {
     uniqueName?: string;
   };
 }
+
+export async function getOrgUrl(): Promise<string> {
+  await SDK.ready();
+  const host = SDK.getHost();
+  const orgName = (host as any)?.name;
+
+  if (!orgName) {
+    throw new Error("Não foi possível determinar o nome da organização.");
+  }
+
+  const orgUrl = `https://dev.azure.com/${orgName}`;
+  return orgUrl;
+}
+/**
+ * 📦 Retorna o contexto atual do Azure DevOps:
+ * - orgUrl: URL base da organização
+ * - projectName: nome do projeto atual
+ */
+export async function getProjectContext(): Promise<{
+  orgUrl: string;
+  project: IProjectInfo;
+}> {
+  await SDK.ready();
+
+  const projectService = await SDK.getService<IProjectPageService>(
+    CommonServiceIds.ProjectPageService
+  );
+  const project = await projectService.getProject();
+  if (!project) throw new Error("Projeto não encontrado no contexto atual.");
+
+  const host = SDK.getHost() as any;
+  const orgName = host?.name;
+  if (!orgName) throw new Error("Não foi possível determinar a organização.");
+
+  const orgUrl = `https://dev.azure.com/${orgName}`;
+
+  console.log("🏗️ Host name:", orgName);
+  console.log("projectName", project.name);
+  console.log("orgUrl", orgUrl);
+
+  return { orgUrl, project };
+}
+
 
 export class AzureDevOpsService {
   private dataMgr?: IExtensionDataManager;
@@ -78,14 +122,9 @@ export class AzureDevOpsService {
 
   public async getVariableGroups(
     projectName: string,
+    orgUrl: string,
     pat: string
   ): Promise<VariableGroup[]> {
-    const config = SDK.getConfiguration() as any;
-    let orgUrl = "https://dev.azure.com/dr34mt34m";
-    if (config?.host?.baseUri) {
-      orgUrl = config.host.baseUri.replace(/\/$/, "");
-    }
-
     const url = `${orgUrl}/${projectName}/_apis/distributedtask/variablegroups?api-version=7.0&$top=150`;
     const res = await fetch(url, {
       headers: { Authorization: `Basic ${btoa(":" + pat)}` },
@@ -96,11 +135,4 @@ export class AzureDevOpsService {
     const data = await res.json();
     return data.value || [];
   }
-  
-
-
-  
 }
-
-
-
