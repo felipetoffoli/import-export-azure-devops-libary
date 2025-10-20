@@ -1,32 +1,22 @@
 import * as React from "react";
-import * as SDK from "azure-devops-extension-sdk";
-import {
-  CommonServiceIds,
-  IProjectPageService,
-  IExtensionDataService,
-  IExtensionDataManager,
-} from "azure-devops-extension-api";
-
 import { Header } from "azure-devops-ui/Header";
 import { Page } from "azure-devops-ui/Page";
 import { Card } from "azure-devops-ui/Card";
-import { MenuButton } from "azure-devops-ui/Menu";
-import { Button } from "azure-devops-ui/Button";
-import { TextField, TextFieldWidth } from "azure-devops-ui/TextField";
 import { Spinner } from "azure-devops-ui/Spinner";
-import { Dialog } from "azure-devops-ui/Dialog";
+import { MenuButton } from "azure-devops-ui/Menu";
 import { showRootComponent } from "../../Common";
-import "./libary-env-tools.scss";
 
-interface IVariableGroup {
-  id: number;
-  name: string;
-  description?: string;
-}
+import {
+  AzureDevOpsService,
+  VariableGroup,
+} from "./services/AzureDevOpsService";
+import { PatTokenDialog } from "./components/PatTokenDialog";
+
+import "./libary-env-tools.scss";
 
 interface IState {
   project?: any;
-  variableGroups: IVariableGroup[];
+  variableGroups: VariableGroup[];
   loading: boolean;
   showPatModal: boolean;
   patInput: string;
@@ -34,9 +24,7 @@ interface IState {
 }
 
 class LibraryEnvTools extends React.Component<{}, IState> {
-  private continuationToken: string | undefined = undefined;
-  private isFetching: boolean = false;
-  private dataMgr?: IExtensionDataManager;
+  private adoService = new AzureDevOpsService();
 
   constructor(props: {}) {
     super(props);
@@ -49,142 +37,46 @@ class LibraryEnvTools extends React.Component<{}, IState> {
     };
   }
 
-  public async componentDidMount(): Promise<void> {
-    SDK.init();
-    await SDK.ready();
-
-    const projectService = await SDK.getService<IProjectPageService>(
-      CommonServiceIds.ProjectPageService
-    );
-    const project = await projectService.getProject();
+  async componentDidMount(): Promise<void> {
+    await this.adoService.init();
+    const project = await this.adoService.getProject();
     this.setState({ project });
 
-    const dataService = await SDK.getService<IExtensionDataService>(
-      CommonServiceIds.ExtensionDataService
-    );
-    const extContext = SDK.getExtensionContext();
-    const accessToken = await SDK.getAccessToken();
-    this.dataMgr = await dataService.getExtensionDataManager(
-      `${extContext.publisherId}.${extContext.extensionId}`,
-      accessToken
-    );
-
-    if (project && project.name) {
-      await this.loadVariableGroups(project.name);
-    }
-
-    SDK.notifyLoadSucceeded();
-  }
-
-  private async getUserPat(projectName: string): Promise<string> {
-    if (!this.dataMgr) throw new Error("EDS não inicializado");
-
-    const user = SDK.getUser();
-    const key = `${projectName}.${user.id}.library.env.tools`;
-    const pat = await this.dataMgr.getValue<string>(key);
-
+    const pat = await this.adoService.getUserPat(project.name);
     if (!pat) {
       this.setState({ showPatModal: true });
-      throw new Error("PAT não configurado");
+      return;
     }
-
-    return pat;
+    await this.loadVariableGroups(project.name, pat);
   }
 
-  private async savePat(): Promise<void> {
+  private async loadVariableGroups(projectName: string, pat: string) {
     try {
-      if (!this.state.patInput.trim()) return;
-      this.setState({ savingPat: true });
-
-      const user = SDK.getUser();
-      const key = `${this.state.project?.name}.${user.id}.library.env.tools`;
-
-      await this.dataMgr?.setValue(key, this.state.patInput.trim());
-      console.log("💾 PAT salvo com sucesso!");
-
-      this.setState({
-        showPatModal: false,
-        savingPat: false,
-        patInput: "",
-      });
-
-      await this.loadVariableGroups(this.state.project?.name);
-    } catch (err) {
-      console.error("Erro ao salvar PAT:", err);
-      this.setState({ savingPat: false });
-    }
-  }
-
-  private async resetPat(): Promise<void> {
-    try {
-      const user = SDK.getUser();
-      const key = `${this.state.project?.name}.${user.id}.library.env.tools`;
-      await this.dataMgr?.setValue(key, undefined);
-      this.setState({ showPatModal: true, patInput: "" });
-    } catch (err) {
-      console.error("Erro ao resetar PAT:", err);
-    }
-  }
-
-  private async loadVariableGroups(
-    projectName: string,
-    append = false
-  ): Promise<void> {
-    try {
-      if (this.isFetching) return;
-      this.isFetching = true;
       this.setState({ loading: true });
-
-      const config = SDK.getConfiguration() as any;
-      let orgUrl = "https://dev.azure.com/dr34mt34m";
-
-      if (config?.host?.baseUri) {
-        orgUrl = config.host.baseUri.replace(/\/$/, "");
-      }
-
-      let pat: string;
-      try {
-        pat = await this.getUserPat(projectName);
-      } catch {
-        this.setState({ loading: false });
-        this.isFetching = false;
-        return;
-      }
-
-      const tokenParam = this.continuationToken
-        ? `&continuationToken=${encodeURIComponent(this.continuationToken)}`
-        : "";
-
-      const url = `${orgUrl}/${projectName}/_apis/distributedtask/variablegroups?api-version=7.0&$top=150${tokenParam}`;
-      console.log("🔗 Fetching:", url);
-
-      const res = await fetch(url, {
-        headers: { Authorization: `Basic ${btoa(":" + pat)}` },
-      });
-
-      if (!res.ok) throw new Error(`Erro HTTP ${res.status}`);
-
-      const data = await res.json();
-      const newItems = data.value || [];
-      this.continuationToken =
-        res.headers.get("x-ms-continuationtoken") || undefined;
-
-      this.setState((prev) => ({
-        variableGroups: append
-          ? [...prev.variableGroups, ...newItems]
-          : newItems,
-        loading: false,
-      }));
-
-      this.isFetching = false;
+      const groups = await this.adoService.getVariableGroups(projectName, pat);
+      this.setState({ variableGroups: groups, loading: false });
     } catch (err) {
       console.error("Erro ao carregar Variable Groups:", err);
-      this.isFetching = false;
       this.setState({ loading: false });
     }
   }
 
-  public render(): JSX.Element {
+  private async savePat() {
+    const { project, patInput } = this.state;
+    if (!project || !patInput.trim()) return;
+    await this.adoService.saveUserPat(project.name, patInput.trim());
+    this.setState({ showPatModal: false });
+    await this.loadVariableGroups(project.name, patInput.trim());
+  }
+
+  private async removePat() {
+    const { project } = this.state;
+    if (!project) return;
+    await this.adoService.removeUserPat(project.name);
+    this.setState({ showPatModal: true, patInput: "" });
+  }
+
+  render() {
     const { variableGroups, loading, showPatModal, patInput, savingPat } =
       this.state;
 
@@ -211,84 +103,77 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                 <thead>
                   <tr>
                     <th>Nome</th>
-                    <th>Descrição</th>
+                    <th>Data de Modificação</th>
+                    <th>Modificado por</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {variableGroups.map((lib) => (
-                    <tr key={lib.id}>
-                      <td>{lib.name}</td>
-                      <td>{lib.description || ""}</td>
-                      <td style={{ textAlign: "right" }}>
-                        <MenuButton
-                          iconProps={{ iconName: "MoreVertical" }}
-                          contextualMenuProps={{
-                            menuProps: {
-                              id: `menu-${lib.id}`,
-                              items: [
-                                {
-                                  id: "edit",
-                                  text: "Editar",
-                                  onActivate: () =>
-                                    alert(`Editar → ${lib.name}`),
-                                },
-                                {
-                                  id: "export",
-                                  text: "Exportar",
-                                  onActivate: () =>
-                                    alert(`Exportar → ${lib.name}`),
-                                },
-                              ],
-                            },
-                          }}
-                        />
+                  {variableGroups.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: "center" }}>
+                        Nenhuma Library encontrada.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    variableGroups.map((lib) => (
+                      <tr key={lib.id}>
+                        <td>{lib.name}</td>
+                        <td>
+                          {lib.modifiedOn
+                            ? new Date(lib.modifiedOn).toLocaleString("pt-BR")
+                            : "—"}
+                        </td>
+                        <td>{lib.modifiedBy?.displayName || "—"}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <MenuButton
+                            iconProps={{ iconName: "MoreVertical" }}
+                            contextualMenuProps={{
+                              menuProps: {
+                                id: `menu-${lib.id}`,
+                                items: [
+                                  {
+                                    id: "edit",
+                                    text: "Editar",
+                                    onActivate: () =>
+                                      alert(`Editar → ${lib.name}`),
+                                  },
+                                  {
+                                    id: "export",
+                                    text: "Exportar .env",
+                                    onActivate: () =>
+                                      alert(`Exportar → ${lib.name}`),
+                                  },
+                                  {
+                                    id: "import",
+                                    text: "Import .env (REPLACE)",
+                                    onActivate: () =>
+                                      alert(`Exportar → ${lib.name}`),
+                                  },
+                                ],
+                              },
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             )}
           </Card>
         </div>
 
-        {showPatModal && (
-          <Dialog
-            titleProps={{ text: "🔐 Configurar Personal Access Token (PAT)" }}
-            onDismiss={() => this.setState({ showPatModal: false })}
-            footerButtonProps={[
-              {
-                text: "Cancelar",
-                onClick: () => this.setState({ showPatModal: false }),
-              },
-              {
-                primary: true,
-                text: savingPat ? "Salvando..." : "Salvar PAT",
-                onClick: () => this.savePat(),
-                disabled: !patInput.trim() || savingPat,
-              },
-            ]}
-          >
-            <p>
-              Informe abaixo o seu <strong>Personal Access Token</strong> do
-              Azure DevOps. Ele será salvo com segurança via{" "}
-              <em>Extension Data Service</em>.
-            </p>
-            <TextField
-              value={patInput}
-              onChange={(_, v) => this.setState({ patInput: v })}
-              placeholder="Exemplo: azdopersonalaccesstoken123..."
-              width={TextFieldWidth.standard}
-            />
-
-            <Button
-              subtle={true}
-              text="Remover PAT atual"
-              iconProps={{ iconName: "Delete" }}
-              onClick={() => this.resetPat()}
-            />
-          </Dialog>
-        )}
+        {/* Modal para configuração do PAT */}
+        <PatTokenDialog
+          visible={showPatModal}
+          patInput={patInput}
+          saving={savingPat}
+          onChange={(v) => this.setState({ patInput: v })}
+          onSave={() => this.savePat()}
+          onCancel={() => this.setState({ showPatModal: false })}
+          onRemove={() => this.removePat()}
+        />
       </Page>
     );
   }

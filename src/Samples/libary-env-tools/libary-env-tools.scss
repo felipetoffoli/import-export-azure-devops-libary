@@ -3,3 +3,30 @@
 .sample-form-section {
     margin-top: 20px;
 }
+
+.library-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e1e1e1;
+  }
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+  }
+
+  tr:hover {
+    background-color: #f8f8f8;
+  }
+
+  td:last-child {
+    width: 50px;
+    text-align: right;
+  }
+}
