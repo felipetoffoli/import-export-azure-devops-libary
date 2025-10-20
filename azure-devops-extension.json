@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "publisher": "felipetoffoli",
-  "version": "1.0.46",
+  "version": "1.0.53",
   "id": "azdo-library-env-react",
   "name": "Library .env Tools",
   "description": "Importa e exporta bibliotecas como arquivos .env",

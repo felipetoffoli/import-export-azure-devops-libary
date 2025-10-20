@@ -6,10 +6,13 @@ import { Spinner } from "azure-devops-ui/Spinner";
 import { MenuButton } from "azure-devops-ui/Menu";
 import { TextField } from "azure-devops-ui/TextField";
 import { showRootComponent } from "../../Common";
+import { ExportDialog } from "./components/ExportDialog";
+import { exportLibrary } from "./utils/exportLibrary";
 
 import {
   AzureDevOpsService,
   VariableGroup,
+  
 } from "./services/AzureDevOpsService";
 import { PatTokenDialog } from "./components/PatTokenDialog";
 
@@ -24,6 +27,8 @@ interface IState {
   patInput: string;
   savingPat: boolean;
   search: string;
+  showExportModal: boolean;
+  selectedGroup?: VariableGroup;
 }
 
 class LibraryEnvTools extends React.Component<{}, IState> {
@@ -39,6 +44,7 @@ class LibraryEnvTools extends React.Component<{}, IState> {
       patInput: "",
       savingPat: false,
       search: "",
+      showExportModal: false,
     };
   }
 
@@ -103,6 +109,19 @@ class LibraryEnvTools extends React.Component<{}, IState> {
 
     window.open(targetUrl, "_blank");
   };
+
+private async handleExport(group: any, format: "env" | "json", includeSecrets: boolean) {
+  const { project } = this.state;
+  if (!project) return;
+
+  const pat = await this.adoService.getUserPat(project.name);
+  if (!pat) {
+    this.setState({ showPatModal: true });
+    return;
+  }
+
+  await exportLibrary(group, format, includeSecrets, project.name, pat);
+}
 
   render() {
     const {
@@ -200,10 +219,14 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                                   },
                                   {
                                     id: "export",
-                                    text: "Exportar .env",
+                                    text: "Exportar .env / .json",
                                     onActivate: () =>
-                                      alert(`Exportar → ${lib.name}`),
+                                      this.setState({
+                                        selectedGroup: lib,
+                                        showExportModal: true,
+                                      }),
                                   },
+
                                   {
                                     id: "import",
                                     text: "Import .env (REPLACE)",
@@ -233,6 +256,20 @@ class LibraryEnvTools extends React.Component<{}, IState> {
           onSave={() => this.savePat()}
           onCancel={() => this.setState({ showPatModal: false })}
           onRemove={() => this.removePat()}
+        />
+        <ExportDialog
+          visible={this.state.showExportModal}
+          onClose={() => this.setState({ showExportModal: false })}
+          onConfirm={(format, includeSecrets) => {
+            if (this.state.selectedGroup) {
+              this.handleExport(
+                this.state.selectedGroup,
+                format,
+                includeSecrets
+              );
+              this.setState({ showExportModal: false });
+            }
+          }}
         />
       </Page>
     );
