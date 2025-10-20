@@ -30,3 +30,12 @@
     text-align: right;
   }
 }
+
+
+.library-table tr:hover td {
+  background: #f3f3f3;
+}
+
+.library-table td:first-child {
+  font-weight: 500;
+}

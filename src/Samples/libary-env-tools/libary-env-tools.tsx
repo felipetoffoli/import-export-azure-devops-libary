@@ -4,6 +4,7 @@ import { Page } from "azure-devops-ui/Page";
 import { Card } from "azure-devops-ui/Card";
 import { Spinner } from "azure-devops-ui/Spinner";
 import { MenuButton } from "azure-devops-ui/Menu";
+import { TextField } from "azure-devops-ui/TextField";
 import { showRootComponent } from "../../Common";
 
 import {
@@ -17,10 +18,12 @@ import "./libary-env-tools.scss";
 interface IState {
   project?: any;
   variableGroups: VariableGroup[];
+  filteredGroups: VariableGroup[];
   loading: boolean;
   showPatModal: boolean;
   patInput: string;
   savingPat: boolean;
+  search: string;
 }
 
 class LibraryEnvTools extends React.Component<{}, IState> {
@@ -30,10 +33,12 @@ class LibraryEnvTools extends React.Component<{}, IState> {
     super(props);
     this.state = {
       variableGroups: [],
+      filteredGroups: [],
       loading: true,
       showPatModal: false,
       patInput: "",
       savingPat: false,
+      search: "",
     };
   }
 
@@ -54,7 +59,11 @@ class LibraryEnvTools extends React.Component<{}, IState> {
     try {
       this.setState({ loading: true });
       const groups = await this.adoService.getVariableGroups(projectName, pat);
-      this.setState({ variableGroups: groups, loading: false });
+      this.setState({
+        variableGroups: groups,
+        filteredGroups: groups,
+        loading: false,
+      });
     } catch (err) {
       console.error("Erro ao carregar Variable Groups:", err);
       this.setState({ loading: false });
@@ -76,9 +85,34 @@ class LibraryEnvTools extends React.Component<{}, IState> {
     this.setState({ showPatModal: true, patInput: "" });
   }
 
+  private handleSearch = (value: string): void => {
+    const search = value.toLowerCase();
+    const filtered = this.state.variableGroups.filter((v) =>
+      v.name.toLowerCase().includes(search)
+    );
+    this.setState({ search: value, filteredGroups: filtered });
+  };
+
+  public openLibraryItem = (id: number): void => {
+    const { project } = this.state;
+    if (!project) return;
+
+    const orgUrl = "https://dev.azure.com/dr34mt34m";
+    // ✅ URL correta para abrir o VariableGroup específico
+    const targetUrl = `${orgUrl}/${project.name}/_library?itemType=VariableGroups&variableGroupId=${id}&view=VariableGroupView`;
+
+    window.open(targetUrl, "_blank");
+  };
+
   render() {
-    const { variableGroups, loading, showPatModal, patInput, savingPat } =
-      this.state;
+    const {
+      filteredGroups,
+      loading,
+      showPatModal,
+      patInput,
+      savingPat,
+      search,
+    } = this.state;
 
     return (
       <Page className="envtools-page flex-grow">
@@ -95,6 +129,14 @@ class LibraryEnvTools extends React.Component<{}, IState> {
         />
 
         <div className="page-content">
+          <div style={{ marginBottom: "10px", maxWidth: "400px" }}>
+            <TextField
+              value={search}
+              onChange={(_, v) => this.handleSearch(v || "")}
+              placeholder="Pesquisar Library..."
+              maxWidth={400}
+            />
+          </div>
           <Card titleProps={{ text: "Libraries encontradas" }}>
             {loading ? (
               <Spinner label="Carregando Variable Groups..." />
@@ -109,16 +151,34 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                   </tr>
                 </thead>
                 <tbody>
-                  {variableGroups.length === 0 ? (
+                  {filteredGroups.length === 0 ? (
                     <tr>
                       <td colSpan={4} style={{ textAlign: "center" }}>
                         Nenhuma Library encontrada.
                       </td>
                     </tr>
                   ) : (
-                    variableGroups.map((lib) => (
+                    filteredGroups.map((lib) => (
                       <tr key={lib.id}>
-                        <td>{lib.name}</td>
+                        <td>
+                          <a
+                            href={`https://dev.azure.com/dr34mt34m/${this.state.project?.name}/_library?itemType=VariableGroups&variableGroupId=${lib.id}&view=VariableGroupView`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#222",
+                              textDecoration: "none",
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              display: "inline-block",
+                              width: "100%",
+                            }}
+                            title="Abrir na Library original"
+                          >
+                            {lib.name}
+                          </a>
+                        </td>
+
                         <td>
                           {lib.modifiedOn
                             ? new Date(lib.modifiedOn).toLocaleString("pt-BR")
@@ -134,9 +194,9 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                                 items: [
                                   {
                                     id: "edit",
-                                    text: "Editar",
+                                    text: "Editar (abrir Library)",
                                     onActivate: () =>
-                                      alert(`Editar → ${lib.name}`),
+                                      this.openLibraryItem(lib.id),
                                   },
                                   {
                                     id: "export",
@@ -148,7 +208,7 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                                     id: "import",
                                     text: "Import .env (REPLACE)",
                                     onActivate: () =>
-                                      alert(`Exportar → ${lib.name}`),
+                                      alert(`Importar → ${lib.name}`),
                                   },
                                 ],
                               },

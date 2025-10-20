@@ -1,29 +1,40 @@
 #!/bin/bash
-set -e  # para o script se der erro em qualquer comando
+set -e  # para o script parar se der erro em qualquer comando
 
-# 🧩 Caminho do manifest
 MANIFEST_FILE="azure-devops-extension.json"
+ERROR_FILE=".publish_error"
 
-# 🧩 Lê a versão atual
-CURRENT_VERSION=$(grep '"version"' "$MANIFEST_FILE" | head -1 | sed -E 's/.*"version": *"([^"]+)".*/\1/')
-echo "🔹 Versão atual: $CURRENT_VERSION"
+# 🧩 Se existe um erro pendente, reutiliza a versão anterior
+if [ -f "$ERROR_FILE" ]; then
+  FAILED_VERSION=$(cat "$ERROR_FILE")
+  echo "⚠️  Publicação anterior falhou na versão $FAILED_VERSION."
+  echo "🔁 Tentando novamente com a mesma versão..."
+  CURRENT_VERSION="$FAILED_VERSION"
+  NEW_VERSION="$FAILED_VERSION"
+  rm -f "$ERROR_FILE"
+else
+  # 🧩 Lê a versão atual
+  CURRENT_VERSION=$(grep '"version"' "$MANIFEST_FILE" | head -1 | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+  echo "🔹 Versão atual: $CURRENT_VERSION"
 
-# 🧩 Incrementa o último número da versão (ex: 1.0.17 → 1.0.18)
-IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
-NEW_VERSION="${major}.${minor}.$((patch + 1))"
-echo "🔹 Nova versão: $NEW_VERSION"
+  # 🧩 Incrementa o último número da versão (ex: 1.0.17 → 1.0.18)
+  IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+  NEW_VERSION="${major}.${minor}.$((patch + 1))"
 
-# 🧩 Atualiza o JSON com a nova versão
-sed -i "s/\"version\": *\"[0-9.]*\"/\"version\": \"${NEW_VERSION}\"/" "$MANIFEST_FILE"
+  echo "🔹 Nova versão: $NEW_VERSION"
 
-# 🧩 Exibe o resultado
+  # 🧩 Atualiza o JSON com a nova versão
+  sed -i "s/\"version\": *\"[0-9.]*\"/\"version\": \"${NEW_VERSION}\"/" "$MANIFEST_FILE"
+fi
+
+# 🧩 Mostra versão no manifest
 grep '"version"' "$MANIFEST_FILE"
 
 # 🧩 Executa build
 echo "🏗️  Executando build..."
 npm run build:dev
 
-sleep 2  # espera 2 segundos para garantir que o arquivo .vsix seja gerado
+sleep 2  # pequena pausa para garantir geração do .vsix
 
 # 🧩 Nome esperado do arquivo .vsix
 PUBLISHER="felipetoffoli"
@@ -53,12 +64,20 @@ if [ -z "$PAT_TOKEN" ]; then
   exit 1
 fi
 
-# 🧩 Publica a extensão no Marketplace com o arquivo correto
+# 🧩 Publica a extensão
 echo "🚀 Publicando extensão (versão $NEW_VERSION)..."
 
-tfx extension publish \
+if ! tfx extension publish \
   --vsix "$VSIX_FILE" \
   --token "$PAT_TOKEN" \
-  --publisher "$PUBLISHER"
+  --publisher "$PUBLISHER"; then
 
+  echo "❌ Erro ao publicar a extensão!"
+  echo "$NEW_VERSION" > "$ERROR_FILE"
+  echo "⚠️  Versão $NEW_VERSION registrada em $ERROR_FILE para retry futuro."
+  exit 1
+fi
+
+# 🧩 Se chegou até aqui, deu tudo certo
 echo "✅ Publicação concluída com sucesso! (Versão $NEW_VERSION)"
+rm -f "$ERROR_FILE" 2>/dev/null || true
