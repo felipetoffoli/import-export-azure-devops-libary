@@ -13,7 +13,7 @@ Com esta extensão, você pode **exportar, importar e sincronizar variáveis de 
 * Pesquise rapidamente pelo nome da library.
 
 
-> `screenshot-library-list.png`
+![Lista de Libraries](docs/screenshots/screenshot-library-list.png)
 
 
 ---
@@ -25,7 +25,7 @@ Com esta extensão, você pode **exportar, importar e sincronizar variáveis de 
 * Útil para replicar configurações entre projetos ou ambientes.
 
 
-> `screenshot-export-dialog.png`
+![Exportar Variáveis](docs/screenshots/screenshot-export-dialog.png)
 
 ---
 
@@ -50,7 +50,7 @@ Com esta extensão, você pode **exportar, importar e sincronizar variáveis de 
   * O checkbox “Substituir existente” vem ativado e bloqueado (não editável).
 
 
-> `screenshot-import-replace.png`
+![Exportar Variáveis](docs/screenshots/screenshot-import-replace.png)
 
 ---
 
@@ -61,7 +61,7 @@ Com esta extensão, você pode **exportar, importar e sincronizar variáveis de 
 * Você pode remover ou reconfigurar o PAT a qualquer momento no botão **“Configurar PAT”**.
 
 
-> `screenshot-pat-dialog.png`
+![Exportar Variáveis](docs/screenshots/screenshot-pat-dialog.png)
 
 ---
 
@@ -102,10 +102,12 @@ Com esta extensão, você pode **exportar, importar e sincronizar variáveis de 
 
 ## 🧠 Próximas melhorias (roadmap)
 
-* [ ] Suporte a variáveis complexas (JSON aninhado).
-* [ ] Histórico de importações/exportações.
-* [ ] Validação automática de variáveis secretas.
-* [ ] Interface com dark mode.
+* [ ] Integração com Vault Hashicorp.
+* [ ] Seguimentação de tipos de Libarys (prod, hom, dev ...).
+* [ ] Favoritos.
+* [ ] Configurar padronização de criação de Libary.
+* [ ] Versão de Grupo de Variaveis com integração S3/MinIo.
+* [ ] Integração com Vault Azure.
 
 ---
 

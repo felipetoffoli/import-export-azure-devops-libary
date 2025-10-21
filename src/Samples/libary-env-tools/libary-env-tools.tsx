@@ -202,6 +202,12 @@ class LibraryEnvTools extends React.Component<{}, IState> {
     } catch (err: any) {
       alert(`❌ Erro ao importar: ${err.message}`);
       console.error("Erro no importLibrary:", err);
+    } finally {
+      this.setState({
+        fileToImport: null,
+        libraryNameInput: "",
+        forceReplace: false,
+      });
     }
   }
 
@@ -251,7 +257,11 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                 primary={true}
                 iconProps={{ iconName: "Upload" }}
                 text="Importar .env / .json"
-                onClick={() => this.setState({ showImportModal: true })}
+                onClick={() => this.setState({ 
+                  forceReplace: false,
+                  libraryNameInput: "",
+                  showImportModal: true
+                 })}
               />
             </div>
           </div>
@@ -363,6 +373,7 @@ class LibraryEnvTools extends React.Component<{}, IState> {
           onSave={() => this.savePat()}
           onCancel={() => this.setState({ showPatModal: false })}
           onRemove={() => this.removePat()}
+          orgUrl={this.state.orgUrl}
         />
         <ExportDialog
           visible={this.state.showExportModal}
@@ -441,7 +452,8 @@ class LibraryEnvTools extends React.Component<{}, IState> {
                   this.setState({ replaceExisting: checked })
                 }
                 label="Substituir Library existente (REPLACE)"
-                disabled={this.state.forceReplace} // 👈 trava quando clicado via menu
+                disabled={this.state.forceReplace} 
+                
               />
             </div>
           </Dialog>

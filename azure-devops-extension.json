@@ -1,22 +1,20 @@
 {
   "manifestVersion": 1,
+  "publisher": "felipetoffoli",
+  "version": "1.0.90",
+  "public": true,
   "id": "azdo-library-env-react",
   "name": "Library .env Tools",
-  "publisher": "felipetoffoli",
-  "version": "1.0.83",
-  "description": "Importa e exporta bibliotecas do Azure DevOps como arquivos .env",
+  "description": "Importa e exporta bibliotecas como arquivos .env",
   "categories": ["Azure Pipelines"],
-  "targets": [
-    { "id": "Microsoft.VisualStudio.Services" }
+  "targets": [{ "id": "Microsoft.VisualStudio.Services" }],
+  "icons": { "default": "icon.png" },
+   "content": {"details": {"path": "README.md"}},
+  "files": [
+    { "path": "static", "addressable": true },
+    { "path": "dist", "addressable": true },
+    { "path": "docs/screenshots", "addressable": true }
   ],
-  "icons": {
-    "default": "icon.png"
-  },
-  "content": {
-    "details": {
-      "path": "README.md"
-    }
-  },
   "links": {
     "home": {
       "uri": "https://marketplace.visualstudio.com/publishers/felipetoffoli"
@@ -28,6 +26,6 @@
       "uri": "https://github.com/felipetoffoli/import-export-azure-devops-libary/issues"
     }
   }
-
-
+  
 }
+
