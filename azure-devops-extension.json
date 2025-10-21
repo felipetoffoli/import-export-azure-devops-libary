@@ -3,7 +3,7 @@
   "id": "azdo-library-env-react",
   "name": "Library .env Tools",
   "publisher": "felipetoffoli",
-  "version": "1.0.79",
+  "version": "1.0.83",
   "description": "Importa e exporta bibliotecas do Azure DevOps como arquivos .env",
   "categories": ["Azure Pipelines"],
   "targets": [
@@ -27,16 +27,7 @@
     "issues": {
       "uri": "https://github.com/felipetoffoli/import-export-azure-devops-libary/issues"
     }
-  },
+  }
 
-  "contributions": [
-    {
-      "id": "azdo-library-env-react-task",
-      "type": "ms.vss-distributed-task.task",
-      "targets": ["ms.vss-distributed-task.tasks"],
-      "properties": {
-        "name": "tasks/import-export"
-      }
-    }
-  ]
+
 }

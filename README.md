@@ -99,15 +99,6 @@ Com esta extensão, você pode **exportar, importar e sincronizar variáveis de 
 
 ---
 
-## ⚠️ Erros comuns
-
-| Erro                                                          | Causa provável                            | Solução                                       |
-| ------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| ❌ `403 Forbidden`                                             | PAT inválido ou expirado                  | Reconfigure o PAT                             |
-| ❌ `Variable group already exists`                             | Nome duplicado e replace desativado       | Ative o checkbox “Substituir existente”       |
-| ❌ `At least one variable group project reference is required` | Falta de referência do projeto no payload | Atualize para versão mais recente da extensão |
-
----
 
 ## 🧠 Próximas melhorias (roadmap)
 
@@ -124,8 +115,3 @@ Com esta extensão, você pode **exportar, importar e sincronizar variáveis de 
 🔹 DevOps Engineer | Plataform Engenner
 🔗 [LinkedIn](https://www.linkedin.com/in/felipetoffoli/)
 💼 [GitHub](https://github.com/felipetoffoli)
-
----
-
-Quer que eu gere também uma **versão em Markdown com placeholders de imagem prontos** (para você só substituir os caminhos dos screenshots depois)?
-Posso formatar o README.md final já pronto para colar no repositório.
