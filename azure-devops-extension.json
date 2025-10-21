@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "publisher": "felipetoffoli",
-  "version": "1.0.90",
+  "version": "1.0.93",
   "public": true,
   "id": "azdo-library-env-react",
   "name": "Library .env Tools",
